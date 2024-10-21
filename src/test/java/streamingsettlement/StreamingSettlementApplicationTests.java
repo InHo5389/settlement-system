@@ -1,4 +1,4 @@
-package streaming_settlement;
+package streamingsettlement;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
