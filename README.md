@@ -1,3 +1,4 @@
 ### ERD
-![image](https://github.com/user-attachments/assets/0eac7b61-54b9-4e66-8f1a-fd8e1fc1cecd)
+![image](https://github.com/user-attachments/assets/5e80e144-00f0-4a79-a25c-c7ed492e62ac)
+
 
