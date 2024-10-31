@@ -37,7 +37,7 @@ public class SecurityConfig {
         http.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         http.authorizeHttpRequests(auth ->
-                auth.requestMatchers("/register", "/login","/main","/")
+                auth.requestMatchers("/register", "/login","/streamings/**")
                         .permitAll()
                         .anyRequest().authenticated());
         // oauth2 설정
