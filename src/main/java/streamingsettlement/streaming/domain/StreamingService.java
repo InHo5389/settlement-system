@@ -40,4 +40,11 @@ public class StreamingService {
                 .lastPlayTime(playHistory.getLastPlayTime())
                 .build();
     }
+
+    @Transactional
+    public void updatePlayTime(StreamingDto.UpdatePlayTime dto) {
+        PlayHistory playHistory = streamingRepository.findPlayHistoryById(dto.getPlayHistoryId())
+                .orElseThrow(() -> new RuntimeException("시청 기록이 없습니다."));
+        playHistory.updateLastPlayTime(dto.getLastPlayTime());
+    }
 }

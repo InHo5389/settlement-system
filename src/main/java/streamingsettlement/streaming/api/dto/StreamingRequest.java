@@ -25,6 +25,7 @@ public class StreamingRequest {
 
     @Getter
     @Setter
+    @AllArgsConstructor
     public static class UpdatePlayTime {
         private Long playHistoryId;
         private Integer lastPlayTime;

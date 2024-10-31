@@ -1,5 +1,6 @@
 package streamingsettlement.streaming.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -54,5 +55,20 @@ class StreamingControllerTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("영상 정보를 응답합니다."));
+    }
+
+    @Test
+    @DisplayName("재생 시점 API가 올바른 요청을 받으면 성공 응답을 반환한다")
+    void updatePlayTime() throws Exception {
+        //given
+        StreamingRequest.UpdatePlayTime request = new StreamingRequest.UpdatePlayTime(1L, 150);
+        //when
+        //then
+        mockMvc.perform(post("/streamings/update-time")
+                        .content(objectMapper.writeValueAsString(request))
+                        .contentType(MediaType.APPLICATION_JSON)
+                )
+                .andDo(print())
+                .andExpect(status().isOk());
     }
 }

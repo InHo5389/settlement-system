@@ -27,6 +27,13 @@ public class StreamingController {
         }
         request.setIpAddress(clientIp);
 
-        return CustomApiResponse.ok("영상 정보를 응답합니다.",streamingService.watch(streamingId, request.toDto()));
+        return CustomApiResponse.ok("영상 정보를 응답합니다.", streamingService.watch(streamingId, request.toDto()));
+    }
+
+    @PostMapping("/update-time")
+    public void updatePlayTime(
+            @RequestBody StreamingRequest.UpdatePlayTime request
+    ) {
+        streamingService.updatePlayTime(request.toDto());
     }
 }
