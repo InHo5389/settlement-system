@@ -9,12 +9,15 @@ import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.dto.StreamingResponse;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
 import streamingsettlement.streaming.domain.entity.Streaming;
+import streamingsettlement.streaming.domain.entity.StreamingAdvertisement;
 
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class StreamingService {
+
+    private static final int AD_INTERVAL = 420;
 
     private final StreamingRepository streamingRepository;
 
@@ -42,9 +45,13 @@ public class StreamingService {
     }
 
     @Transactional
-    public void updatePlayTime(StreamingDto.UpdatePlayTime dto) {
+    public void updatePlayTimeAndAdPosition(StreamingDto.UpdatePlayTime dto) {
         PlayHistory playHistory = streamingRepository.findPlayHistoryById(dto.getPlayHistoryId())
                 .orElseThrow(() -> new RuntimeException("시청 기록이 없습니다."));
-        playHistory.updateLastPlayTime(dto.getLastPlayTime());
+
+        Streaming streaming = streamingRepository.findStreamingById(playHistory.getStreamingId())
+                .orElseThrow(() -> new RuntimeException("스트리밍을 찾을 수 없습니다."));
+
+        playHistory.updateLastViewedAdPosition(dto.getLastPlayTime(),streaming,AD_INTERVAL);
     }
 }

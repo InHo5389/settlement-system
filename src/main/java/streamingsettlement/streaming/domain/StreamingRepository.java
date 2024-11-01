@@ -2,6 +2,7 @@ package streamingsettlement.streaming.domain;
 
 import streamingsettlement.streaming.domain.entity.PlayHistory;
 import streamingsettlement.streaming.domain.entity.Streaming;
+import streamingsettlement.streaming.domain.entity.StreamingAdvertisement;
 
 import java.util.Optional;
 
@@ -15,4 +16,6 @@ public interface StreamingRepository {
 
     void streamingDeleteAll();
     void playHistoryDeleteAll();
+
+    StreamingAdvertisement save(StreamingAdvertisement playHistory);
 }

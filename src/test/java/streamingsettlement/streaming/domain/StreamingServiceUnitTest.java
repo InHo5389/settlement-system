@@ -1,16 +1,11 @@
 package streamingsettlement.streaming.domain;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.BDDMockito;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.test.web.servlet.MockMvc;
 import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
 
@@ -40,7 +35,7 @@ public class StreamingServiceUnitTest {
         given(streamingRepository.findPlayHistoryById(playHistoryId))
                 .willReturn(Optional.of(playHistory));
         //when
-        streamingService.updatePlayTime(dto);
+        streamingService.updatePlayTimeAndAdPosition(dto);
         //then
         assertThat(playHistory.getLastPlayTime()).isEqualTo(lastPlayTime);
     }

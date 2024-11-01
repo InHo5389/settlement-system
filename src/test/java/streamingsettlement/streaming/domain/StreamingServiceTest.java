@@ -11,6 +11,7 @@ import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.dto.StreamingResponse;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
 import streamingsettlement.streaming.domain.entity.Streaming;
+import streamingsettlement.streaming.domain.entity.StreamingAdvertisement;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -95,5 +96,109 @@ class StreamingServiceTest {
         Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
         //then
         assertThat(savedStreaming.getTotalViews()).isEqualTo(streaming.getTotalViews());
+    }
+
+    @Test
+    @DisplayName("광고는 7분에 하나 등록되는데 14분이 지났을때 광고 조회수 2개가 올라가야한다.")
+    void shouldIncreaseAdViewCountByTwoAfter14Minutes() {
+        //given
+        Streaming streaming = streamingRepository.save(Streaming.builder()
+                .userId(null)
+                .totalViews(50)
+                .build());
+        int lastPlayTime = 0;
+        PlayHistory playHistory = PlayHistory.builder()
+                .streamingId(streaming.getId())
+                .userId(null)
+                .lastPlayTime(lastPlayTime)
+                .build();
+        streamingRepository.save(playHistory);
+        StreamingAdvertisement firstAd = streamingRepository.save(StreamingAdvertisement.builder()
+                .streamingId(streaming.getId())
+                .position(420)
+                .build());
+
+        StreamingAdvertisement secondAd = streamingRepository.save(StreamingAdvertisement.builder()
+                .streamingId(streaming.getId())
+                .position(840)
+                .build());
+
+
+
+        StreamingDto.UpdatePlayTime dto = new StreamingDto.UpdatePlayTime(playHistory.getId(), 840);
+        //when
+        streamingService.updatePlayTimeAndAdPosition(dto);
+        Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
+        //then
+        Assertions.assertThat(savedStreaming.getAdViews()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("광고는 7분에 하나 등록되는데 13분이 지났을때 광고 조회수 1개가 올라가야한다.")
+    void shouldIncreaseAdViewCountByOneAfter13Minutes() {
+        //given
+        Streaming streaming = streamingRepository.save(Streaming.builder()
+                .userId(null)
+                .totalViews(50)
+                .build());
+        int lastPlayTime = 0;
+        PlayHistory playHistory = PlayHistory.builder()
+                .streamingId(streaming.getId())
+                .userId(null)
+                .lastPlayTime(lastPlayTime)
+                .build();
+        streamingRepository.save(playHistory);
+        StreamingAdvertisement firstAd = streamingRepository.save(StreamingAdvertisement.builder()
+                .streamingId(streaming.getId())
+                .position(420)
+                .build());
+
+        StreamingAdvertisement secondAd = streamingRepository.save(StreamingAdvertisement.builder()
+                .streamingId(streaming.getId())
+                .position(840)
+                .build());
+
+
+
+        StreamingDto.UpdatePlayTime dto = new StreamingDto.UpdatePlayTime(playHistory.getId(), 780);
+        //when
+        streamingService.updatePlayTimeAndAdPosition(dto);
+        Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
+        //then
+        Assertions.assertThat(savedStreaming.getAdViews()).isEqualTo(1);
+    }
+    @Test
+    @DisplayName("광고는 7분에 하나 등록되는데 6분 50초가 지났을때 광고 조회수 오르지 않아야 한다.")
+    void shouldIncreaseAdViewCountByOneAfter6Minutes50Sec() {
+        //given
+        Streaming streaming = streamingRepository.save(Streaming.builder()
+                .userId(null)
+                .totalViews(50)
+                .build());
+        int lastPlayTime = 0;
+        PlayHistory playHistory = PlayHistory.builder()
+                .streamingId(streaming.getId())
+                .userId(null)
+                .lastPlayTime(lastPlayTime)
+                .build();
+        streamingRepository.save(playHistory);
+        StreamingAdvertisement firstAd = streamingRepository.save(StreamingAdvertisement.builder()
+                .streamingId(streaming.getId())
+                .position(420)
+                .build());
+
+        StreamingAdvertisement secondAd = streamingRepository.save(StreamingAdvertisement.builder()
+                .streamingId(streaming.getId())
+                .position(840)
+                .build());
+
+
+
+        StreamingDto.UpdatePlayTime dto = new StreamingDto.UpdatePlayTime(playHistory.getId(), 410);
+        //when
+        streamingService.updatePlayTimeAndAdPosition(dto);
+        Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
+        //then
+        Assertions.assertThat(savedStreaming.getAdViews()).isEqualTo(0);
     }
 }

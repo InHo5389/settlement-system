@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import streamingsettlement.streaming.domain.StreamingRepository;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
 import streamingsettlement.streaming.domain.entity.Streaming;
+import streamingsettlement.streaming.domain.entity.StreamingAdvertisement;
 
 import java.util.Optional;
 
@@ -48,5 +49,10 @@ public class StreamingRepositoryImpl implements StreamingRepository {
     @Override
     public void playHistoryDeleteAll() {
         playHistoryJpaRepository.deleteAll();
+    }
+
+    @Override
+    public StreamingAdvertisement save(StreamingAdvertisement streamingAdvertisement) {
+        return streamingAdvertisementJpaRepository.save(streamingAdvertisement);
     }
 }
