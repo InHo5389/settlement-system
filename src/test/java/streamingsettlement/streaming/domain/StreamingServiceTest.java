@@ -71,7 +71,7 @@ class StreamingServiceTest {
         streamingService.watch(streaming.getId(), dto);
         Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
         //then
-        assertThat(savedStreaming.getTotalViews()).isEqualTo(1);
+        assertThat(savedStreaming.getStreamingViews()).isEqualTo(1);
     }
 
     @Test
@@ -95,7 +95,7 @@ class StreamingServiceTest {
         streamingService.watch(streaming.getId(), dto);
         Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
         //then
-        assertThat(savedStreaming.getTotalViews()).isEqualTo(streaming.getTotalViews());
+        assertThat(savedStreaming.getStreamingViews()).isEqualTo(streaming.getStreamingViews());
     }
 
     @Test

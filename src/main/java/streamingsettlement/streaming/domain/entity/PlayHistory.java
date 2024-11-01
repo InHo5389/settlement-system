@@ -22,7 +22,7 @@ public class PlayHistory {
     private Long userId;
     private Long streamingId;
     private int lastPlayTime;
-    private Integer lastViewedAdPosition;
+    private Integer lastAdPlayTime;
     private String sourceIp;
     private LocalDateTime viewedAt;
 
@@ -31,7 +31,7 @@ public class PlayHistory {
         this.userId = userId;
         this.streamingId = streamingId;
         this.lastPlayTime = lastPlayTime;
-        this.lastViewedAdPosition = 0;
+        this.lastAdPlayTime = 0;
         this.sourceIp = sourceIp;
         this.viewedAt = viewedAt;
     }
@@ -48,7 +48,7 @@ public class PlayHistory {
 
     public void updateLastViewedAdPosition(Integer newPlayTime, Streaming streaming, int adInterval) {
         // 이전 재생 시점이 몇 번째 광고까지 봤는지
-        int previousAdCount = this.lastViewedAdPosition / adInterval;
+        int previousAdCount = this.lastAdPlayTime / adInterval;
 
         // 현재 재생 시점이 몇 번째 광고까지 봤는지
         int currentAdCount = newPlayTime / adInterval;
@@ -56,7 +56,7 @@ public class PlayHistory {
         // 새로 본 광고 수만큼 조회수 증가
         if (currentAdCount > previousAdCount) {
             streaming.incrementAdViews(currentAdCount - previousAdCount);
-            this.lastViewedAdPosition = currentAdCount * adInterval;
+            this.lastAdPlayTime = currentAdCount * adInterval;
         }
 
         this.lastPlayTime = newPlayTime;

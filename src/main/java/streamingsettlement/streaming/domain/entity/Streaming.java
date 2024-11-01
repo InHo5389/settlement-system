@@ -22,24 +22,24 @@ public class Streaming {
     private Long userId;
     private String title;
     private int duration;
-    private long totalViews;
+    private long streamingViews;
     private Long adViews;
     private String cdnUrl;
     private LocalDateTime createdAt;
 
     @Builder
-    public Streaming(Long userId, String title, int duration, long totalViews, String cdnUrl, LocalDateTime createdAt) {
+    public Streaming(Long userId, String title, int duration, long streamingViews, String cdnUrl, LocalDateTime createdAt) {
         this.userId = userId;
         this.title = title;
         this.duration = duration;
-        this.totalViews = totalViews;
+        this.streamingViews = streamingViews;
         this.adViews = 0L;
         this.cdnUrl = cdnUrl;
         this.createdAt = createdAt;
     }
 
     public void increaseView(){
-        this.totalViews++;
+        this.streamingViews++;
     }
 
     public void incrementAdViews(int count) {

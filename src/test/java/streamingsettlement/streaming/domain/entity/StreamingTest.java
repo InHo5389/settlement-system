@@ -4,8 +4,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class StreamingTest {
 
     @Test
@@ -17,7 +15,7 @@ class StreamingTest {
         //when
         streaming.increaseView();
         //then
-        Assertions.assertThat(streaming.getTotalViews()).isEqualTo(totalViews+1);
+        Assertions.assertThat(streaming.getStreamingViews()).isEqualTo(totalViews+1);
     }
 
 }
