@@ -11,7 +11,7 @@ class StreamingTest {
     void increaseView(){
         //given
         int totalViews = 50;
-        Streaming streaming = Streaming.builder().totalViews(totalViews).build();
+        Streaming streaming = Streaming.builder().streamingViews(totalViews).build();
         //when
         streaming.increaseView();
         //then

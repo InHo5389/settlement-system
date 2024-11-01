@@ -43,7 +43,7 @@ class StreamingServiceTest {
                 .userId(null)
                 .title("여행 vlog")
                 .duration(100000000)
-                .totalViews(0)
+                .streamingViews(0)
                 .createdAt(LocalDateTime.now())
                 .cdnUrl("cdn.url")
                 .build());
@@ -64,7 +64,7 @@ class StreamingServiceTest {
         //given
         Streaming streaming = streamingRepository.save(Streaming.builder()
                 .userId(null)
-                .totalViews(0)
+                .streamingViews(0)
                 .build());
         StreamingDto.Watch dto = new StreamingDto.Watch(null, "127.0.0.1");
         //when
@@ -81,7 +81,7 @@ class StreamingServiceTest {
         String ipAddress = "127.0.0.1";
         Streaming streaming = streamingRepository.save(Streaming.builder()
                 .userId(null)
-                .totalViews(50)
+                .streamingViews(50)
                 .build());
         StreamingDto.Watch dto = new StreamingDto.Watch(null, ipAddress);
 
@@ -104,7 +104,7 @@ class StreamingServiceTest {
         //given
         Streaming streaming = streamingRepository.save(Streaming.builder()
                 .userId(null)
-                .totalViews(50)
+                .streamingViews(50)
                 .build());
         int lastPlayTime = 0;
         PlayHistory playHistory = PlayHistory.builder()
@@ -139,7 +139,7 @@ class StreamingServiceTest {
         //given
         Streaming streaming = streamingRepository.save(Streaming.builder()
                 .userId(null)
-                .totalViews(50)
+                .streamingViews(50)
                 .build());
         int lastPlayTime = 0;
         PlayHistory playHistory = PlayHistory.builder()
@@ -173,7 +173,7 @@ class StreamingServiceTest {
         //given
         Streaming streaming = streamingRepository.save(Streaming.builder()
                 .userId(null)
-                .totalViews(50)
+                .streamingViews(50)
                 .build());
         int lastPlayTime = 0;
         PlayHistory playHistory = PlayHistory.builder()
