@@ -1,5 +1,6 @@
 ### ERD
-![image](https://github.com/user-attachments/assets/6c709b99-8fef-476b-84cd-d1f047efd161)
+![image](https://github.com/user-attachments/assets/30bf679c-cb68-4e80-8216-00596ebf354d)
+
 
 
 
