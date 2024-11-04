@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Getter
@@ -27,11 +29,11 @@ public class PlayHistory {
     private LocalDateTime viewedAt;
 
     @Builder
-    public PlayHistory(Long userId, Long streamingId, int lastPlayTime, String sourceIp, LocalDateTime viewedAt) {
+    public PlayHistory(Long userId, Long streamingId,Integer lastAdPlayTime, int lastPlayTime, String sourceIp, LocalDateTime viewedAt) {
         this.userId = userId;
         this.streamingId = streamingId;
         this.lastPlayTime = lastPlayTime;
-        this.lastAdPlayTime = 0;
+        this.lastAdPlayTime = lastAdPlayTime;
         this.sourceIp = sourceIp;
         this.viewedAt = viewedAt;
     }
@@ -45,20 +47,21 @@ public class PlayHistory {
                 .viewedAt(LocalDateTime.now())
                 .build();
     }
-
-    public void updateLastViewedAdPosition(Integer newPlayTime, Streaming streaming, int adInterval) {
-        // 이전 재생 시점이 몇 번째 광고까지 봤는지
+// 450 /420
+    public List<Integer> calculateNewAdPositions(Integer newPlayTime, int adInterval) {
+        List<Integer> newAdPositions = new ArrayList<>();
         int previousAdCount = this.lastAdPlayTime / adInterval;
-
-        // 현재 재생 시점이 몇 번째 광고까지 봤는지
         int currentAdCount = newPlayTime / adInterval;
 
-        // 새로 본 광고 수만큼 조회수 증가
-        if (currentAdCount > previousAdCount) {
-            streaming.incrementAdViews(currentAdCount - previousAdCount);
-            this.lastAdPlayTime = currentAdCount * adInterval;
+        // 시청한 새로운 광고 위치들을 수집 (previousAdCount + 1부터 currentAdCount까지)
+        for (int i = previousAdCount + 1; i <= currentAdCount; i++) {
+            newAdPositions.add(i * adInterval);
         }
 
+        // 마지막 광고 시청 시점 업데이트
+        this.lastAdPlayTime = currentAdCount * adInterval;
         this.lastPlayTime = newPlayTime;
+
+        return newAdPositions;
     }
 }
