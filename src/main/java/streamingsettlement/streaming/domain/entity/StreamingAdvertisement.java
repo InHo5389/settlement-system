@@ -21,6 +21,7 @@ public class StreamingAdvertisement {
 
     private Long streamingId;
     private Long advertisementId;
+    private Long adViews;
     private Integer position;
     private LocalDateTime createdAt;
 
@@ -28,7 +29,12 @@ public class StreamingAdvertisement {
     public StreamingAdvertisement(Long streamingId, Long advertisementId, Integer position) {
         this.streamingId = streamingId;
         this.advertisementId = advertisementId;
+        this.adViews = 0L;
         this.position = position;
         this.createdAt = LocalDateTime.now();
+    }
+
+    public void updateAdViews(Long viewCount) {
+        adViews = viewCount;
     }
 }

@@ -23,7 +23,6 @@ public class Streaming {
     private String title;
     private int duration;
     private long streamingViews;
-    private Long adViews;
     private String cdnUrl;
     private LocalDateTime createdAt;
 
@@ -33,16 +32,11 @@ public class Streaming {
         this.title = title;
         this.duration = duration;
         this.streamingViews = streamingViews;
-        this.adViews = 0L;
         this.cdnUrl = cdnUrl;
         this.createdAt = createdAt;
     }
 
-    public void increaseView(){
-        this.streamingViews++;
-    }
-
-    public void incrementAdViews(int count) {
-        this.adViews+=count;
+    public void updateViewCount(Long viewCount) {
+        this.streamingViews += viewCount;
     }
 }

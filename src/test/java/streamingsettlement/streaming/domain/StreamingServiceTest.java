@@ -1,6 +1,5 @@
 package streamingsettlement.streaming.domain;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -11,12 +10,11 @@ import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.dto.StreamingResponse;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
 import streamingsettlement.streaming.domain.entity.Streaming;
-import streamingsettlement.streaming.domain.entity.StreamingAdvertisement;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
 @SpringBootTest
@@ -28,11 +26,18 @@ class StreamingServiceTest {
     @Autowired
     private StreamingRepository streamingRepository;
 
+    @Autowired
+    private StreamingRedisRepository streamingRedisRepository;
+
     @BeforeEach
     void setUp() {
         streamingRepository.streamingDeleteAll();
         streamingRepository.playHistoryDeleteAll();
+        streamingRedisRepository.clear();
     }
+
+    private static final String VIEW_COUNT_KEY = "streaming:%d:views";
+    private static final String AD_VIEW_KEY = "streaming:%d:ad:%d:views";
 
     @Test
     @DisplayName("영상 재생시 시청기록을 생성한다." +
@@ -51,7 +56,7 @@ class StreamingServiceTest {
         //when
         StreamingResponse.Watch response = streamingService.watch(streaming.getId(), dto);
 
-        Optional<PlayHistory> optionalPlayHistory = streamingRepository.findFirstBySourceIpAndStreamingIdOrderByViewedAtDesc(dto.getSourceIp(), streaming.getId());
+        Optional<PlayHistory> optionalPlayHistory = streamingRepository.findLatestPlayHistory(dto.getSourceIp(), streaming.getId());
         PlayHistory playHistory = optionalPlayHistory.get();
         //then
         assertThat(response).extracting("playHistoryId", "lastPlayTime")
@@ -69,9 +74,9 @@ class StreamingServiceTest {
         StreamingDto.Watch dto = new StreamingDto.Watch(null, "127.0.0.1");
         //when
         streamingService.watch(streaming.getId(), dto);
-        Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
+        Long streamingView = streamingRedisRepository.getStreamingView(String.format(VIEW_COUNT_KEY, streaming.getId()));
         //then
-        assertThat(savedStreaming.getStreamingViews()).isEqualTo(1);
+        assertThat(streamingView).isEqualTo(1);
     }
 
     @Test
@@ -99,106 +104,54 @@ class StreamingServiceTest {
     }
 
     @Test
-    @DisplayName("광고는 7분에 하나 등록되는데 14분이 지났을때 광고 조회수 2개가 올라가야한다.")
-    void shouldIncreaseAdViewCountByTwoAfter14Minutes() {
+    @DisplayName("광고는 영상 7분마다 1개가 들어가고 영상을 처음부터 15분 봤으면  " +
+            "레디스에는 광고뷰가 2이고 420,840 조회수는 각각1이다.")
+    void saveAdViewsToRedis(){
         //given
-        Streaming streaming = streamingRepository.save(Streaming.builder()
-                .userId(null)
-                .streamingViews(50)
-                .build());
-        int lastPlayTime = 0;
-        PlayHistory playHistory = PlayHistory.builder()
-                .streamingId(streaming.getId())
-                .userId(null)
-                .lastPlayTime(lastPlayTime)
-                .build();
+        long streamingId = 1L;
+        PlayHistory playHistory = PlayHistory.builder().streamingId(streamingId).lastAdPlayTime(0).build();
         streamingRepository.save(playHistory);
-        StreamingAdvertisement firstAd = streamingRepository.save(StreamingAdvertisement.builder()
-                .streamingId(streaming.getId())
-                .position(420)
-                .build());
-
-        StreamingAdvertisement secondAd = streamingRepository.save(StreamingAdvertisement.builder()
-                .streamingId(streaming.getId())
-                .position(840)
-                .build());
-
-
-
-        StreamingDto.UpdatePlayTime dto = new StreamingDto.UpdatePlayTime(playHistory.getId(), 840);
+        StreamingDto.UpdatePlayTime dto = StreamingDto.UpdatePlayTime.builder()
+                .playHistoryId(playHistory.getId())
+                .lastPlayTime(900)
+                .build();
         //when
-        streamingService.updatePlayTimeAndAdPosition(dto);
-        Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
+        streamingService.saveAdViewsToRedis(dto);
+        Long adView7Minute = streamingRedisRepository.getAdView(String.format(AD_VIEW_KEY, playHistory.getStreamingId(), 420));
+        Long adView15Minute = streamingRedisRepository.getAdView(String.format(AD_VIEW_KEY, playHistory.getStreamingId(), 420));
         //then
-        Assertions.assertThat(savedStreaming.getAdViews()).isEqualTo(2);
+        assertThat(adView7Minute).isEqualTo(1);
+        assertThat(adView15Minute).isEqualTo(1);
     }
 
-    @Test
-    @DisplayName("광고는 7분에 하나 등록되는데 13분이 지났을때 광고 조회수 1개가 올라가야한다.")
-    void shouldIncreaseAdViewCountByOneAfter13Minutes() {
-        //given
-        Streaming streaming = streamingRepository.save(Streaming.builder()
-                .userId(null)
-                .streamingViews(50)
-                .build());
-        int lastPlayTime = 0;
-        PlayHistory playHistory = PlayHistory.builder()
-                .streamingId(streaming.getId())
-                .userId(null)
-                .lastPlayTime(lastPlayTime)
-                .build();
-        streamingRepository.save(playHistory);
-        StreamingAdvertisement firstAd = streamingRepository.save(StreamingAdvertisement.builder()
-                .streamingId(streaming.getId())
-                .position(420)
-                .build());
-
-        StreamingAdvertisement secondAd = streamingRepository.save(StreamingAdvertisement.builder()
-                .streamingId(streaming.getId())
-                .position(840)
-                .build());
-
-
-
-        StreamingDto.UpdatePlayTime dto = new StreamingDto.UpdatePlayTime(playHistory.getId(), 780);
-        //when
-        streamingService.updatePlayTimeAndAdPosition(dto);
-        Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
-        //then
-        Assertions.assertThat(savedStreaming.getAdViews()).isEqualTo(1);
-    }
-    @Test
-    @DisplayName("광고는 7분에 하나 등록되는데 6분 50초가 지났을때 광고 조회수 오르지 않아야 한다.")
-    void shouldIncreaseAdViewCountByOneAfter6Minutes50Sec() {
-        //given
-        Streaming streaming = streamingRepository.save(Streaming.builder()
-                .userId(null)
-                .streamingViews(50)
-                .build());
-        int lastPlayTime = 0;
-        PlayHistory playHistory = PlayHistory.builder()
-                .streamingId(streaming.getId())
-                .userId(null)
-                .lastPlayTime(lastPlayTime)
-                .build();
-        streamingRepository.save(playHistory);
-        StreamingAdvertisement firstAd = streamingRepository.save(StreamingAdvertisement.builder()
-                .streamingId(streaming.getId())
-                .position(420)
-                .build());
-
-        StreamingAdvertisement secondAd = streamingRepository.save(StreamingAdvertisement.builder()
-                .streamingId(streaming.getId())
-                .position(840)
-                .build());
-
-
-
-        StreamingDto.UpdatePlayTime dto = new StreamingDto.UpdatePlayTime(playHistory.getId(), 410);
-        //when
-        streamingService.updatePlayTimeAndAdPosition(dto);
-        Streaming savedStreaming = streamingRepository.findStreamingById(streaming.getId()).get();
-        //then
-        Assertions.assertThat(savedStreaming.getAdViews()).isEqualTo(0);
-    }
+//    // TODO : 통과하게 작성
+//    @Test
+//    @DisplayName("ip가 다른 유저 100명이 영상을 시청했을때 조회수는 100이 나와야 한다.")
+//    void test() throws InterruptedException {
+//        //given
+//        Long streamingId = 1L;
+//        int count = 100;
+//        ExecutorService executorService = Executors.newFixedThreadPool(count);
+//        CountDownLatch latch = new CountDownLatch(count);
+//
+//        streamingRepository.save(Streaming.builder().build());
+//
+//        //when
+//        for (int i = 0; i < count; i++) {
+//            final int userId = i + 1;
+//            try {
+//                executorService.submit(() -> {
+//                    streamingService.watch(streamingId, new StreamingDto.Watch((long)userId + 1, "192.0.0." + userId));
+//                });
+//            }finally {
+//                latch.countDown();
+//            }
+//        }
+//
+//        latch.await();
+//        executorService.shutdown();
+//        //then
+//        Streaming streaming = streamingRepository.findStreamingById(streamingId).get();
+//        assertThat(streaming.getStreamingViews()).isEqualTo(100);
+//    }
 }

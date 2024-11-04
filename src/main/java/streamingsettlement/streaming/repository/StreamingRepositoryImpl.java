@@ -7,6 +7,7 @@ import streamingsettlement.streaming.domain.entity.PlayHistory;
 import streamingsettlement.streaming.domain.entity.Streaming;
 import streamingsettlement.streaming.domain.entity.StreamingAdvertisement;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -27,7 +28,7 @@ public class StreamingRepositoryImpl implements StreamingRepository {
     }
 
     @Override
-    public Optional<PlayHistory> findFirstBySourceIpAndStreamingIdOrderByViewedAtDesc(String sourceIp, Long streamingId) {
+    public Optional<PlayHistory> findLatestPlayHistory(String sourceIp, Long streamingId) {
         return playHistoryJpaRepository.findFirstBySourceIpAndStreamingIdOrderByViewedAtDesc(sourceIp,streamingId);
     }
 
@@ -54,5 +55,10 @@ public class StreamingRepositoryImpl implements StreamingRepository {
     @Override
     public StreamingAdvertisement save(StreamingAdvertisement streamingAdvertisement) {
         return streamingAdvertisementJpaRepository.save(streamingAdvertisement);
+    }
+
+    @Override
+    public Optional<StreamingAdvertisement> findByStreamingIdAndPosition(Long streamingId, Integer position) {
+        return streamingAdvertisementJpaRepository.findByStreamingIdAndPosition(streamingId,position);
     }
 }

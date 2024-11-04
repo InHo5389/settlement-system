@@ -8,7 +8,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
+import streamingsettlement.streaming.domain.entity.Streaming;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
@@ -23,20 +25,30 @@ public class StreamingServiceUnitTest {
     @Mock
     private StreamingRepository streamingRepository;
 
+    @Mock
+    private StreamingRedisRepository streamingRedisRepository;
+
     @Test
-    @DisplayName("마지막 재생 시점을 갱신한다.")
-    void updatePlayTime(){
+    @DisplayName("광고는 영상 7분마다 붙고 전 마지막 시청 내역이 410초일때 두번째 시청할때 900초를 봤으면" +
+            "streamingRedisRepository는 2번호출 된다.")
+    void saveAdViewsToRedis() {
         //given
         Long playHistoryId = 1L;
-        Integer lastPlayTime = 5000;
+        Long streamingId = 1L;
+        Integer lastPlayTime = 900;
         StreamingDto.UpdatePlayTime dto = new StreamingDto.UpdatePlayTime(playHistoryId, lastPlayTime);
 
-        PlayHistory playHistory = PlayHistory.builder().lastPlayTime(0).build();
+        PlayHistory playHistory = PlayHistory.builder()
+                .streamingId(streamingId)
+                .lastAdPlayTime(410)
+                .build();
+
+        Streaming streaming = Streaming.builder().build();
         given(streamingRepository.findPlayHistoryById(playHistoryId))
                 .willReturn(Optional.of(playHistory));
         //when
-        streamingService.updatePlayTimeAndAdPosition(dto);
+        streamingService.saveAdViewsToRedis(dto);
         //then
-        assertThat(playHistory.getLastPlayTime()).isEqualTo(lastPlayTime);
+        verify(streamingRedisRepository, times(2)).incrementAdView(anyString());
     }
 }

@@ -9,8 +9,8 @@ import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.dto.StreamingResponse;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
 import streamingsettlement.streaming.domain.entity.Streaming;
-import streamingsettlement.streaming.domain.entity.StreamingAdvertisement;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -18,8 +18,11 @@ import java.util.Optional;
 public class StreamingService {
 
     private static final int AD_INTERVAL = 420;
+    private static final String VIEW_COUNT_KEY = "streaming:%d:views";
+    private static final String AD_VIEW_KEY = "streaming:%d:ad:%d:views";
 
     private final StreamingRepository streamingRepository;
+    private final StreamingRedisRepository streamingRedisRepository;
 
     /**
      * ip주소,스트리밍 id로 시청 히스토리에서 찾고 없으면 최초 재생으로 조회수 증가
@@ -30,9 +33,10 @@ public class StreamingService {
         Streaming streaming = streamingRepository.findStreamingById(streamingId)
                 .orElseThrow(() -> new CustomGlobalException(ErrorType.NOT_FOUND_STREAMING));
 
-        Optional<PlayHistory> optionalPlayHistory = streamingRepository.findFirstBySourceIpAndStreamingIdOrderByViewedAtDesc(dto.getSourceIp(), streamingId);
+        Optional<PlayHistory> optionalPlayHistory = streamingRepository.findLatestPlayHistory(dto.getSourceIp(), streamingId);
         if (optionalPlayHistory.isEmpty()) {
-            streaming.increaseView();
+            String redisKey = String.format(VIEW_COUNT_KEY, streamingId);
+            streamingRedisRepository.incrementStreamingView(redisKey);
         }
 
         PlayHistory playHistory = PlayHistory.create(dto.getUserId(), streamingId, optionalPlayHistory, dto.getSourceIp());
@@ -45,13 +49,14 @@ public class StreamingService {
     }
 
     @Transactional
-    public void updatePlayTimeAndAdPosition(StreamingDto.UpdatePlayTime dto) {
+    public void saveAdViewsToRedis(StreamingDto.UpdatePlayTime dto) {
         PlayHistory playHistory = streamingRepository.findPlayHistoryById(dto.getPlayHistoryId())
                 .orElseThrow(() -> new RuntimeException("시청 기록이 없습니다."));
+        List<Integer> newAdPositions = playHistory.calculateNewAdPositions(dto.getLastPlayTime(), AD_INTERVAL);
 
-        Streaming streaming = streamingRepository.findStreamingById(playHistory.getStreamingId())
-                .orElseThrow(() -> new RuntimeException("스트리밍을 찾을 수 없습니다."));
-
-        playHistory.updateLastViewedAdPosition(dto.getLastPlayTime(),streaming,AD_INTERVAL);
+        for (Integer position : newAdPositions) {
+            String redisKey = String.format(AD_VIEW_KEY, playHistory.getStreamingId(), position);
+            streamingRedisRepository.incrementAdView(redisKey);
+        }
     }
 }
