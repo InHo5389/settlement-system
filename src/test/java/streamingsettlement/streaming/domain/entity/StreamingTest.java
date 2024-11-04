@@ -7,15 +7,16 @@ import org.junit.jupiter.api.Test;
 class StreamingTest {
 
     @Test
-    @DisplayName("increaseView() 실행시 조회수 1이 증가한다.")
+    @DisplayName("updateViewCount(view) 실행시 기존 조회수 + view로 증가한다.")
     void increaseView(){
         //given
         int totalViews = 50;
         Streaming streaming = Streaming.builder().streamingViews(totalViews).build();
         //when
-        streaming.increaseView();
+        int view = 30;
+        streaming.updateViewCount((long) view);
         //then
-        Assertions.assertThat(streaming.getStreamingViews()).isEqualTo(totalViews+1);
+        Assertions.assertThat(streaming.getStreamingViews()).isEqualTo(totalViews+view);
     }
 
 }
