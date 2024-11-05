@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import streamingsettlement.streaming.common.util.RedisKeyUtil;
 import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.dto.StreamingResponse;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
@@ -35,9 +36,6 @@ class StreamingServiceTest {
         streamingRepository.playHistoryDeleteAll();
         streamingRedisRepository.clear();
     }
-
-    private static final String VIEW_COUNT_KEY = "streaming:%d:views";
-    private static final String AD_VIEW_KEY = "streaming:%d:ad:%d:views";
 
     @Test
     @DisplayName("영상 재생시 시청기록을 생성한다." +
@@ -74,7 +72,7 @@ class StreamingServiceTest {
         StreamingDto.Watch dto = new StreamingDto.Watch(null, "127.0.0.1");
         //when
         streamingService.watch(streaming.getId(), dto);
-        Long streamingView = streamingRedisRepository.getStreamingView(String.format(VIEW_COUNT_KEY, streaming.getId()));
+        Long streamingView = streamingRedisRepository.getStreamingView(RedisKeyUtil.formatViewCountKey(streaming.getId()));
         //then
         assertThat(streamingView).isEqualTo(1);
     }
@@ -117,8 +115,8 @@ class StreamingServiceTest {
                 .build();
         //when
         streamingService.saveAdViewsToRedis(dto);
-        Long adView7Minute = streamingRedisRepository.getAdView(String.format(AD_VIEW_KEY, playHistory.getStreamingId(), 420));
-        Long adView15Minute = streamingRedisRepository.getAdView(String.format(AD_VIEW_KEY, playHistory.getStreamingId(), 420));
+        Long adView7Minute = streamingRedisRepository.getAdView(String.format(RedisKeyUtil.AD_VIEW_KEY, playHistory.getStreamingId(), 420));
+        Long adView15Minute = streamingRedisRepository.getAdView(String.format(RedisKeyUtil.AD_VIEW_KEY, playHistory.getStreamingId(), 420));
         //then
         assertThat(adView7Minute).isEqualTo(1);
         assertThat(adView15Minute).isEqualTo(1);

@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import streamingsettlement.streaming.common.exception.CustomGlobalException;
 import streamingsettlement.streaming.common.exception.ErrorType;
+import streamingsettlement.streaming.common.util.AdUtil;
+import streamingsettlement.streaming.common.util.RedisKeyUtil;
 import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.dto.StreamingResponse;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
@@ -16,10 +18,6 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class StreamingService {
-
-    private static final int AD_INTERVAL = 420;
-    private static final String VIEW_COUNT_KEY = "streaming:%d:views";
-    private static final String AD_VIEW_KEY = "streaming:%d:ad:%d:views";
 
     private final StreamingRepository streamingRepository;
     private final StreamingRedisRepository streamingRedisRepository;
@@ -35,7 +33,7 @@ public class StreamingService {
 
         Optional<PlayHistory> optionalPlayHistory = streamingRepository.findLatestPlayHistory(dto.getSourceIp(), streamingId);
         if (optionalPlayHistory.isEmpty()) {
-            String redisKey = String.format(VIEW_COUNT_KEY, streamingId);
+            String redisKey = RedisKeyUtil.formatViewCountKey(streamingId);
             streamingRedisRepository.incrementStreamingView(redisKey);
         }
 
@@ -52,10 +50,10 @@ public class StreamingService {
     public void saveAdViewsToRedis(StreamingDto.UpdatePlayTime dto) {
         PlayHistory playHistory = streamingRepository.findPlayHistoryById(dto.getPlayHistoryId())
                 .orElseThrow(() -> new RuntimeException("시청 기록이 없습니다."));
-        List<Integer> newAdPositions = playHistory.calculateNewAdPositions(dto.getLastPlayTime(), AD_INTERVAL);
+        List<Integer> newAdPositions = playHistory.calculateNewAdPositions(dto.getLastPlayTime(), AdUtil.AD_INTERVAL);
 
         for (Integer position : newAdPositions) {
-            String redisKey = String.format(AD_VIEW_KEY, playHistory.getStreamingId(), position);
+            String redisKey = RedisKeyUtil.formatAdViewKey(playHistory.getStreamingId(),position);
             streamingRedisRepository.incrementAdView(redisKey);
         }
     }
