@@ -1,4 +1,4 @@
-package streamingsettlement.streaming.domain;
+package streamingsettlement.streaming.domain.repository;
 
 import java.util.Set;
 
