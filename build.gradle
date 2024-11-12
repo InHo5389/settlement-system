@@ -42,11 +42,14 @@ dependencies {
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-	//jwt
+	// jwt
 	implementation group: 'com.auth0', name: 'java-jwt', version: '4.4.0'
 
 	// redis
 	implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+	// batch
+	implementation 'org.springframework.boot:spring-boot-starter-batch'
 }
 
 tasks.named('test') {

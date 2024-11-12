@@ -5,12 +5,16 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import streamingsettlement.streaming.common.util.RedisKeyUtil;
 import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.dto.StreamingResponse;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
 import streamingsettlement.streaming.domain.entity.Streaming;
+import streamingsettlement.streaming.domain.repository.PlayHistoryRepository;
+import streamingsettlement.streaming.domain.repository.StreamingRedisRepository;
+import streamingsettlement.streaming.domain.repository.StreamingRepository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -19,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Transactional
 @SpringBootTest
+@ActiveProfiles("test")
 class StreamingServiceTest {
 
     @Autowired
@@ -30,10 +35,13 @@ class StreamingServiceTest {
     @Autowired
     private StreamingRedisRepository streamingRedisRepository;
 
+    @Autowired
+    private PlayHistoryRepository playHistoryRepository;
+
     @BeforeEach
     void setUp() {
         streamingRepository.streamingDeleteAll();
-        streamingRepository.playHistoryDeleteAll();
+        playHistoryRepository.playHistoryDeleteAll();
         streamingRedisRepository.clear();
     }
 
@@ -54,7 +62,7 @@ class StreamingServiceTest {
         //when
         StreamingResponse.Watch response = streamingService.watch(streaming.getId(), dto);
 
-        Optional<PlayHistory> optionalPlayHistory = streamingRepository.findLatestPlayHistory(dto.getSourceIp(), streaming.getId());
+        Optional<PlayHistory> optionalPlayHistory = playHistoryRepository.findLatestPlayHistory(dto.getSourceIp(), streaming.getId());
         PlayHistory playHistory = optionalPlayHistory.get();
         //then
         assertThat(response).extracting("playHistoryId", "lastPlayTime")
@@ -88,7 +96,7 @@ class StreamingServiceTest {
                 .build());
         StreamingDto.Watch dto = new StreamingDto.Watch(null, ipAddress);
 
-        streamingRepository.save(PlayHistory.builder()
+        playHistoryRepository.save(PlayHistory.builder()
                 .userId(null)
                 .streamingId(streaming.getId())
                 .sourceIp(ipAddress)
@@ -108,7 +116,7 @@ class StreamingServiceTest {
         //given
         long streamingId = 1L;
         PlayHistory playHistory = PlayHistory.builder().streamingId(streamingId).lastAdPlayTime(0).build();
-        streamingRepository.save(playHistory);
+        playHistoryRepository.save(playHistory);
         StreamingDto.UpdatePlayTime dto = StreamingDto.UpdatePlayTime.builder()
                 .playHistoryId(playHistory.getId())
                 .lastPlayTime(900)
@@ -121,35 +129,4 @@ class StreamingServiceTest {
         assertThat(adView7Minute).isEqualTo(1);
         assertThat(adView15Minute).isEqualTo(1);
     }
-
-//    // TODO : 통과하게 작성
-//    @Test
-//    @DisplayName("ip가 다른 유저 100명이 영상을 시청했을때 조회수는 100이 나와야 한다.")
-//    void test() throws InterruptedException {
-//        //given
-//        Long streamingId = 1L;
-//        int count = 100;
-//        ExecutorService executorService = Executors.newFixedThreadPool(count);
-//        CountDownLatch latch = new CountDownLatch(count);
-//
-//        streamingRepository.save(Streaming.builder().build());
-//
-//        //when
-//        for (int i = 0; i < count; i++) {
-//            final int userId = i + 1;
-//            try {
-//                executorService.submit(() -> {
-//                    streamingService.watch(streamingId, new StreamingDto.Watch((long)userId + 1, "192.0.0." + userId));
-//                });
-//            }finally {
-//                latch.countDown();
-//            }
-//        }
-//
-//        latch.await();
-//        executorService.shutdown();
-//        //then
-//        Streaming streaming = streamingRepository.findStreamingById(streamingId).get();
-//        assertThat(streaming.getStreamingViews()).isEqualTo(100);
-//    }
 }

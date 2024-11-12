@@ -1,0 +1,13 @@
+package streamingsettlement.adjustment.repository.impl;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Repository;
+import streamingsettlement.adjustment.domain.StreamingSettlementHistoryRepository;
+import streamingsettlement.adjustment.repository.jpa.StreamingSettlementHistoryJpaRepository;
+
+@Repository
+@RequiredArgsConstructor
+public class StreamingSettlementHistoryRepositoryImpl implements StreamingSettlementHistoryRepository {
+
+    private final StreamingSettlementHistoryJpaRepository streamingSettlementHistoryJpaRepository;
+}
