@@ -26,16 +26,16 @@ public class PlayHistory {
     private int lastPlayTime;
     private Integer lastAdPlayTime;
     private String sourceIp;
-    private LocalDateTime viewedAt;
+    private LocalDateTime createdAt;
 
     @Builder
-    public PlayHistory(Long userId, Long streamingId,Integer lastAdPlayTime, int lastPlayTime, String sourceIp, LocalDateTime viewedAt) {
+    public PlayHistory(Long userId, Long streamingId,Integer lastAdPlayTime, int lastPlayTime, String sourceIp, LocalDateTime createdAt) {
         this.userId = userId;
         this.streamingId = streamingId;
         this.lastPlayTime = lastPlayTime;
         this.lastAdPlayTime = lastAdPlayTime;
         this.sourceIp = sourceIp;
-        this.viewedAt = viewedAt;
+        this.createdAt = createdAt;
     }
 
     public static PlayHistory create(Long userId, Long streamingId, Optional<PlayHistory> optionalPlayHistory, String sourceIp) {
@@ -44,7 +44,7 @@ public class PlayHistory {
                 .streamingId(streamingId)
                 .lastPlayTime(optionalPlayHistory.map(PlayHistory::getLastPlayTime).orElse(0))
                 .sourceIp(sourceIp)
-                .viewedAt(LocalDateTime.now())
+                .createdAt(LocalDateTime.now())
                 .build();
     }
 // 450 /420

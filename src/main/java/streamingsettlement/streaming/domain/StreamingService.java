@@ -11,6 +11,9 @@ import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.dto.StreamingResponse;
 import streamingsettlement.streaming.domain.entity.PlayHistory;
 import streamingsettlement.streaming.domain.entity.Streaming;
+import streamingsettlement.streaming.domain.repository.PlayHistoryRepository;
+import streamingsettlement.streaming.domain.repository.StreamingRedisRepository;
+import streamingsettlement.streaming.domain.repository.StreamingRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +23,7 @@ import java.util.Optional;
 public class StreamingService {
 
     private final StreamingRepository streamingRepository;
+    private final PlayHistoryRepository playHistoryRepository;
     private final StreamingRedisRepository streamingRedisRepository;
 
     /**
@@ -31,14 +35,14 @@ public class StreamingService {
         Streaming streaming = streamingRepository.findStreamingById(streamingId)
                 .orElseThrow(() -> new CustomGlobalException(ErrorType.NOT_FOUND_STREAMING));
 
-        Optional<PlayHistory> optionalPlayHistory = streamingRepository.findLatestPlayHistory(dto.getSourceIp(), streamingId);
+        Optional<PlayHistory> optionalPlayHistory = playHistoryRepository.findLatestPlayHistory(dto.getSourceIp(), streamingId);
         if (optionalPlayHistory.isEmpty()) {
             String redisKey = RedisKeyUtil.formatViewCountKey(streamingId);
             streamingRedisRepository.incrementStreamingView(redisKey);
         }
 
         PlayHistory playHistory = PlayHistory.create(dto.getUserId(), streamingId, optionalPlayHistory, dto.getSourceIp());
-        streamingRepository.save(playHistory);
+        playHistoryRepository.save(playHistory);
 
         return StreamingResponse.Watch.builder()
                 .playHistoryId(playHistory.getId())
@@ -48,7 +52,7 @@ public class StreamingService {
 
     @Transactional
     public void saveAdViewsToRedis(StreamingDto.UpdatePlayTime dto) {
-        PlayHistory playHistory = streamingRepository.findPlayHistoryById(dto.getPlayHistoryId())
+        PlayHistory playHistory = playHistoryRepository.findPlayHistoryById(dto.getPlayHistoryId())
                 .orElseThrow(() -> new RuntimeException("시청 기록이 없습니다."));
         List<Integer> newAdPositions = playHistory.calculateNewAdPositions(dto.getLastPlayTime(), AdUtil.AD_INTERVAL);
 

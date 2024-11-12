@@ -1,15 +1,15 @@
 package streamingsettlement.streaming.common.scheduler;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import streamingsettlement.streaming.common.exception.CustomGlobalException;
 import streamingsettlement.streaming.common.exception.ErrorType;
 import streamingsettlement.streaming.common.util.RedisKeyUtil;
-import streamingsettlement.streaming.domain.StreamingRedisRepository;
-import streamingsettlement.streaming.domain.StreamingRepository;
+import streamingsettlement.streaming.domain.repository.StreamingAdvertisementRepository;
+import streamingsettlement.streaming.domain.repository.StreamingRedisRepository;
+import streamingsettlement.streaming.domain.repository.StreamingRepository;
 import streamingsettlement.streaming.domain.entity.Streaming;
 import streamingsettlement.streaming.domain.entity.StreamingAdvertisement;
 
@@ -20,6 +20,7 @@ import java.util.Set;
 public class ViewCountSyncScheduler {
 
     private final StreamingRepository streamingRepository;
+    private final StreamingAdvertisementRepository streamingAdvertisementRepository;
     private final StreamingRedisRepository streamingRedisRepository;
 
     @Scheduled(fixedRate = 60000)  // 1분마다 실행
@@ -68,7 +69,7 @@ public class ViewCountSyncScheduler {
             Long viewCount = streamingRedisRepository.getAdView(key);
 
             if (viewCount > 0) {
-                StreamingAdvertisement streamingAdvertisement = streamingRepository
+                StreamingAdvertisement streamingAdvertisement = streamingAdvertisementRepository
                         .findByStreamingIdAndPosition(streamingId, position)
                         .orElseThrow(() -> new CustomGlobalException(ErrorType.NOT_FOUND_ADVERTISEMENT));
 

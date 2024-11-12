@@ -3,7 +3,7 @@ package streamingsettlement.streaming.repository.redis;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Repository;
-import streamingsettlement.streaming.domain.StreamingRedisRepository;
+import streamingsettlement.streaming.domain.repository.StreamingRedisRepository;
 
 import java.util.Set;
 
