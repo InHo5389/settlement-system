@@ -22,7 +22,8 @@ public class AdSettlementHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long streamingAdId;
+    private Long streamingId;
+    private Long advertisementId;
     private Long adViews;
     private BigDecimal adAmount;
     private LocalDateTime settlementAt;

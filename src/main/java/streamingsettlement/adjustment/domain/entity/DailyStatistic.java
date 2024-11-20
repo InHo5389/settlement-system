@@ -27,6 +27,7 @@ public class DailyStatistic {
     private BigDecimal advertisementAmount;
     private Long streamingViews;
     private Long advertisementViews;
-    private int playTime;
+    private Long playTime;
+    private LocalDateTime statisticDate;
     private LocalDateTime createdAt;
 }
