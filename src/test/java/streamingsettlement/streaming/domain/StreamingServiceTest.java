@@ -122,7 +122,7 @@ class StreamingServiceTest {
                 .lastPlayTime(900)
                 .build();
         //when
-        streamingService.saveAdViewsToRedis(dto);
+        streamingService.updatePlayTime(dto);
         Long adView7Minute = streamingRedisRepository.getAdView(String.format(RedisKeyUtil.AD_VIEW_KEY, playHistory.getStreamingId(), 420));
         Long adView15Minute = streamingRedisRepository.getAdView(String.format(RedisKeyUtil.AD_VIEW_KEY, playHistory.getStreamingId(), 420));
         //then

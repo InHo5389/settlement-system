@@ -34,6 +34,6 @@ public class StreamingController {
     public void updatePlayTime(
             @RequestBody StreamingRequest.UpdatePlayTime request
     ) {
-        streamingService.saveAdViewsToRedis(request.toDto());
+        streamingService.updatePlayTime(request.toDto());
     }
 }

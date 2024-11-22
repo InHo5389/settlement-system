@@ -23,7 +23,7 @@ public class StreamingSettlementHistory {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long streamingId;
-    private Long settlementView;
+    private Long streamingViews;
     private BigDecimal streamingAmount;
     private LocalDateTime settlementAt;
 }
