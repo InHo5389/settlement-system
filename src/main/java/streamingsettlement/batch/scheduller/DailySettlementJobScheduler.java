@@ -16,7 +16,7 @@ public class DailySettlementJobScheduler {
     private final JobLauncher jobLauncher;
     private final Job dailySettlementJob;
 
-    @Scheduled(cron = "0 56 21 * * *")  // 매일 오후 5시 22분
+    @Scheduled(cron = "0 00 04 * * *")  // 매일 오후 5시 22분
     public void runJob() {
         try {
             JobParameters parameters = new JobParametersBuilder()
