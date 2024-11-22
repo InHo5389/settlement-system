@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import streamingsettlement.streaming.common.exception.CustomGlobalException;
 import streamingsettlement.streaming.common.exception.ErrorType;
-import streamingsettlement.streaming.common.util.AdUtil;
 import streamingsettlement.streaming.common.util.RedisKeyUtil;
 import streamingsettlement.streaming.domain.dto.StreamingDto;
 import streamingsettlement.streaming.domain.dto.StreamingResponse;
@@ -15,7 +14,7 @@ import streamingsettlement.streaming.domain.repository.PlayHistoryRepository;
 import streamingsettlement.streaming.domain.repository.StreamingRedisRepository;
 import streamingsettlement.streaming.domain.repository.StreamingRepository;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -27,38 +26,60 @@ public class StreamingService {
     private final StreamingRedisRepository streamingRedisRepository;
 
     /**
-     * ip주소,스트리밍 id로 시청 히스토리에서 찾고 없으면 최초 재생으로 조회수 증가
-     * 새로운 시청 기록 생성할때 그 전 마지막 재생 시점으로 생성 어차피 폴링으로 업데이트 시켜줄거기 때문
+     * 최초 시청 시작 or 이어보기
      */
     @Transactional
     public StreamingResponse.Watch watch(Long streamingId, StreamingDto.Watch dto) {
         Streaming streaming = streamingRepository.findStreamingById(streamingId)
                 .orElseThrow(() -> new CustomGlobalException(ErrorType.NOT_FOUND_STREAMING));
 
-        Optional<PlayHistory> optionalPlayHistory = playHistoryRepository.findLatestPlayHistory(dto.getSourceIp(), streamingId);
-        if (optionalPlayHistory.isEmpty()) {
+        // 최근 시청 기록 조회 (userId가 있으면 userId로, 없으면 sourceIp로)
+        Optional<PlayHistory> optionalPlayHistory = dto.getUserId() != null ?
+                playHistoryRepository.findTopByUserIdAndStreamingIdOrderByCreatedAtDesc(dto.getUserId(), streamingId) :
+                playHistoryRepository.findTopBySourceIpAndStreamingIdOrderByCreatedAtDesc(dto.getSourceIp(), streamingId);
+
+        // 새로운 시청이면 조회수 증가 (1시간 이전 기록은 새로운 시청으로 간주)
+        if (optionalPlayHistory.isEmpty() ||
+                optionalPlayHistory.get().getCreatedAt().isBefore(LocalDateTime.now().minusHours(1))) {
             String redisKey = RedisKeyUtil.formatViewCountKey(streamingId);
             streamingRedisRepository.incrementStreamingView(redisKey);
+
+            // 새로운 시청 기록 생성
+            PlayHistory newPlayHistory = PlayHistory.builder()
+                    .userId(dto.getUserId())
+                    .streamingId(streamingId)
+                    .lastPlayTime(0)  // 시작은 0초부터
+                    .sourceIp(dto.getSourceIp())
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            playHistoryRepository.save(newPlayHistory);
+
+            return StreamingResponse.Watch.builder()
+                    .playHistoryId(newPlayHistory.getId())
+                    .lastPlayTime(0)
+                    .build();
         }
 
-        PlayHistory playHistory = PlayHistory.create(dto.getUserId(), streamingId, optionalPlayHistory, dto.getSourceIp());
-        playHistoryRepository.save(playHistory);
-
+        // 이어보기인 경우 기존 시청 기록의 lastPlayTime 반환
+        PlayHistory playHistory = optionalPlayHistory.get();
         return StreamingResponse.Watch.builder()
                 .playHistoryId(playHistory.getId())
                 .lastPlayTime(playHistory.getLastPlayTime())
                 .build();
     }
 
-    @Transactional
-    public void saveAdViewsToRedis(StreamingDto.UpdatePlayTime dto) {
-        PlayHistory playHistory = playHistoryRepository.findPlayHistoryById(dto.getPlayHistoryId())
-                .orElseThrow(() -> new RuntimeException("시청 기록이 없습니다."));
-        List<Integer> newAdPositions = playHistory.calculateNewAdPositions(dto.getLastPlayTime(), AdUtil.AD_INTERVAL);
 
-        for (Integer position : newAdPositions) {
-            String redisKey = RedisKeyUtil.formatAdViewKey(playHistory.getStreamingId(),position);
-            streamingRedisRepository.incrementAdView(redisKey);
+    /**
+     * 10초마다 재생시간 업데이트
+     */
+    @Transactional
+    public void updatePlayTime(StreamingDto.UpdatePlayTime dto) {
+        PlayHistory playHistory = playHistoryRepository.findById(dto.getPlayHistoryId())
+                .orElseThrow(() -> new RuntimeException("시청 기록이 없습니다."));
+
+        // 재생시간이 증가한 경우만 업데이트
+        if (dto.getLastPlayTime() > playHistory.getLastPlayTime()) {
+            playHistory.updateLastPlayTime(dto.getLastPlayTime());
         }
     }
 }

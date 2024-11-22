@@ -15,6 +15,11 @@ public class PlayHistoryRepositoryImpl implements PlayHistoryRepository{
     private final PlayHistoryJpaRepository playHistoryJpaRepository;
 
     @Override
+    public Optional<PlayHistory> findById(Long playHistoryId) {
+        return playHistoryJpaRepository.findById(playHistoryId);
+    }
+
+    @Override
     public Optional<PlayHistory> findLatestPlayHistory(String sourceIp, Long streamingId) {
         return playHistoryJpaRepository.findFirstBySourceIpAndStreamingIdOrderByCreatedAtDesc(sourceIp,streamingId);
     }
@@ -32,6 +37,16 @@ public class PlayHistoryRepositoryImpl implements PlayHistoryRepository{
     @Override
     public void playHistoryDeleteAll() {
         playHistoryJpaRepository.deleteAll();
+    }
+
+    @Override
+    public Optional<PlayHistory> findTopByUserIdAndStreamingIdOrderByCreatedAtDesc(Long userId, Long streamingId) {
+        return playHistoryJpaRepository.findTopByUserIdAndStreamingIdOrderByCreatedAtDesc(userId,streamingId);
+    }
+
+    @Override
+    public Optional<PlayHistory> findTopBySourceIpAndStreamingIdOrderByCreatedAtDesc(String sourceIp, Long streamingId) {
+        return playHistoryJpaRepository.findTopBySourceIpAndStreamingIdOrderByCreatedAtDesc(sourceIp,streamingId);
     }
 
 }
