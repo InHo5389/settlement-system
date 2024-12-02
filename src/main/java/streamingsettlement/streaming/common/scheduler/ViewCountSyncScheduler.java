@@ -55,28 +55,4 @@ public class ViewCountSyncScheduler {
             return null;
         }
     }
-
-    @Scheduled(fixedRate = 60000)
-    @Transactional
-    public void syncAdViewCountsToDB() {
-        Set<String> keys = streamingRedisRepository.getAdViewKeys(RedisKeyUtil.AD_VIEW_KEY);
-
-        for (String key : keys) {
-            // key 형식: "streaming:1:ad:420:views"
-            String[] parts = key.split(":");
-            Long streamingId = Long.parseLong(parts[1]);
-            Integer position = Integer.parseInt(parts[3]);
-            Long viewCount = streamingRedisRepository.getAdView(key);
-
-            if (viewCount > 0) {
-                StreamingAdvertisement streamingAdvertisement = streamingAdvertisementRepository
-                        .findByStreamingIdAndPosition(streamingId, position)
-                        .orElseThrow(() -> new CustomGlobalException(ErrorType.NOT_FOUND_ADVERTISEMENT));
-
-                streamingAdvertisement.updateAdViews(viewCount);
-
-                streamingRedisRepository.deleteKey(key);
-            }
-        }
-    }
 }

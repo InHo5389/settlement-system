@@ -14,13 +14,11 @@ import streamingsettlement.streaming.domain.repository.PlayHistoryRepository;
 import streamingsettlement.streaming.domain.repository.StreamingRedisRepository;
 import streamingsettlement.streaming.domain.repository.StreamingRepository;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class StreamingService {
-
     private final StreamingRepository streamingRepository;
     private final PlayHistoryRepository playHistoryRepository;
     private final StreamingRedisRepository streamingRedisRepository;
@@ -30,44 +28,42 @@ public class StreamingService {
      */
     @Transactional
     public StreamingResponse.Watch watch(Long streamingId, StreamingDto.Watch dto) {
+        // 스트리밍 조회
         Streaming streaming = streamingRepository.findStreamingById(streamingId)
                 .orElseThrow(() -> new CustomGlobalException(ErrorType.NOT_FOUND_STREAMING));
 
-        // 최근 시청 기록 조회 (userId가 있으면 userId로, 없으면 sourceIp로)
-        Optional<PlayHistory> optionalPlayHistory = dto.getUserId() != null ?
-                playHistoryRepository.findTopByUserIdAndStreamingIdOrderByCreatedAtDesc(dto.getUserId(), streamingId) :
-                playHistoryRepository.findTopBySourceIpAndStreamingIdOrderByCreatedAtDesc(dto.getSourceIp(), streamingId);
+        // creator 여부 체크
+        boolean isCreator = streaming.isCreator(dto.getUserId());
 
-        // 새로운 시청이면 조회수 증가 (1시간 이전 기록은 새로운 시청으로 간주)
-        if (optionalPlayHistory.isEmpty() ||
-                optionalPlayHistory.get().getCreatedAt().isBefore(LocalDateTime.now().minusHours(1))) {
-            String redisKey = RedisKeyUtil.formatViewCountKey(streamingId);
-            streamingRedisRepository.incrementStreamingView(redisKey);
-
-            // 새로운 시청 기록 생성
-            PlayHistory newPlayHistory = PlayHistory.builder()
-                    .userId(dto.getUserId())
-                    .streamingId(streamingId)
-                    .lastPlayTime(0)  // 시작은 0초부터
-                    .sourceIp(dto.getSourceIp())
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            playHistoryRepository.save(newPlayHistory);
+        // 어뷰징 체크: creator가 아니고 30초 이내 재시청인 경우
+        if (!isCreator && !isValidAccess(streamingId, dto)) {
+            // 어뷰징으로 판단되면 이전 재생 시점만 반환
+            int lastPlayTime = getLastPlayTime(dto.getUserId(), streamingId, dto.getSourceIp());
+            Long lastHistoryId = getRecentPlayHistory(dto.getUserId(), streamingId, dto.getSourceIp())
+                    .map(PlayHistory::getId)
+                    .orElse(null);
 
             return StreamingResponse.Watch.builder()
-                    .playHistoryId(newPlayHistory.getId())
-                    .lastPlayTime(0)
+                    .playHistoryId(lastHistoryId)
+                    .lastPlayTime(lastPlayTime)
                     .build();
         }
 
-        // 이어보기인 경우 기존 시청 기록의 lastPlayTime 반환
-        PlayHistory playHistory = optionalPlayHistory.get();
+        // 정상적인 시청이고 creator가 아닌 경우 조회수 증가
+        if (!isCreator) {
+            incrementViewCount(streamingId);
+            setAccessRecord(streamingId, dto);
+        }
+
+        // 유효한 시청만 PlayHistory 생성
+        PlayHistory playHistory = createPlayHistory(dto, streamingId, isCreator);
+        int lastPlayTime = getLastPlayTime(dto.getUserId(), streamingId, dto.getSourceIp());
+
         return StreamingResponse.Watch.builder()
                 .playHistoryId(playHistory.getId())
-                .lastPlayTime(playHistory.getLastPlayTime())
+                .lastPlayTime(lastPlayTime)
                 .build();
     }
-
 
     /**
      * 10초마다 재생시간 업데이트
@@ -75,11 +71,56 @@ public class StreamingService {
     @Transactional
     public void updatePlayTime(StreamingDto.UpdatePlayTime dto) {
         PlayHistory playHistory = playHistoryRepository.findById(dto.getPlayHistoryId())
-                .orElseThrow(() -> new RuntimeException("시청 기록이 없습니다."));
+                .orElseThrow(() -> new CustomGlobalException(ErrorType.NOT_FOUND_HISTORY));
 
         // 재생시간이 증가한 경우만 업데이트
         if (dto.getLastPlayTime() > playHistory.getLastPlayTime()) {
             playHistory.updateLastPlayTime(dto.getLastPlayTime());
         }
+    }
+
+    private boolean isValidAccess(Long streamingId, StreamingDto.Watch dto) {
+        String key = getAccessKey(streamingId, dto);
+        return streamingRedisRepository.getStreamingView(key) == null;
+    }
+
+    private void setAccessRecord(Long streamingId, StreamingDto.Watch dto) {
+        String key = getAccessKey(streamingId, dto);
+        streamingRedisRepository.incrementStreamingView(key);
+    }
+
+    private String getAccessKey(Long streamingId, StreamingDto.Watch dto) {
+        String identifier = dto.getUserId() != null ?
+                "user:" + dto.getUserId() :
+                "ip:" + dto.getSourceIp();
+        return "streaming:access:" + streamingId + ":" + identifier;
+    }
+
+    private void incrementViewCount(Long streamingId) {
+        String redisKey = RedisKeyUtil.formatViewCountKey(streamingId);
+        streamingRedisRepository.incrementStreamingView(redisKey);
+    }
+
+    private PlayHistory createPlayHistory(StreamingDto.Watch dto, Long streamingId, boolean isCreator) {
+        PlayHistory playHistory = PlayHistory.create(
+                dto.getUserId(),
+                streamingId,
+                dto.getSourceIp(),
+                isCreator
+        );
+        return playHistoryRepository.save(playHistory);
+    }
+
+    private Optional<PlayHistory> getRecentPlayHistory(Long userId, Long streamingId, String sourceIp) {
+        if (userId != null) {
+            return playHistoryRepository.findTopByUserIdAndStreamingIdOrderByCreatedAtDesc(userId, streamingId);
+        }
+        return playHistoryRepository.findTopBySourceIpAndStreamingIdOrderByCreatedAtDesc(sourceIp, streamingId);
+    }
+
+    private int getLastPlayTime(Long userId, Long streamingId, String sourceIp) {
+        return getRecentPlayHistory(userId, streamingId, sourceIp)
+                .map(PlayHistory::getLastPlayTime)
+                .orElse(0);
     }
 }
