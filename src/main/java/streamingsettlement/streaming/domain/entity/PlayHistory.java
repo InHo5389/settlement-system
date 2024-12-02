@@ -25,24 +25,27 @@ public class PlayHistory {
     private Long streamingId;
     private int lastPlayTime;
     private String sourceIp;
+    private boolean isCreatorView;
     private LocalDateTime createdAt;
 
     @Builder
-    public PlayHistory(Long userId, Long streamingId, int lastPlayTime, String sourceIp, LocalDateTime createdAt) {
+    private PlayHistory(Long userId, Long streamingId, Integer lastPlayTime, String sourceIp, LocalDateTime createdAt, boolean isCreatorView) {
         this.userId = userId;
         this.streamingId = streamingId;
         this.lastPlayTime = lastPlayTime;
         this.sourceIp = sourceIp;
         this.createdAt = createdAt;
+        this.isCreatorView = isCreatorView;
     }
 
-    public static PlayHistory create(Long userId, Long streamingId, Optional<PlayHistory> optionalPlayHistory, String sourceIp) {
+    public static PlayHistory create(Long userId, Long streamingId, String sourceIp, boolean isCreatorView) {
         return PlayHistory.builder()
                 .userId(userId)
                 .streamingId(streamingId)
-                .lastPlayTime(optionalPlayHistory.map(PlayHistory::getLastPlayTime).orElse(0))
+                .lastPlayTime(0)
                 .sourceIp(sourceIp)
                 .createdAt(LocalDateTime.now())
+                .isCreatorView(isCreatorView)
                 .build();
     }
 

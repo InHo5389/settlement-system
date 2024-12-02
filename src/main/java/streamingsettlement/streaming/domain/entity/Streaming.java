@@ -42,4 +42,8 @@ public class Streaming {
     public void updateViewCount(Long viewCount) {
         this.streamingViews += viewCount;
     }
+
+    public boolean isCreator(Long userId) {
+        return this.userId == userId;
+    }
 }
